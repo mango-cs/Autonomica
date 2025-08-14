@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lightning Path Simulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            gap: 24px;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        
+        .simulation-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 800px;
+        }
+        
+        .controls {
+            width: 320px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            height: fit-content;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        canvas {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            background: #000;
+            cursor: crosshair;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        canvas:hover {
+            box-shadow: 0 12px 40px rgba(0, 255, 255, 0.1);
+        }
+        
+        .control-group {
+            margin-bottom: 24px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #f0f0f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            margin-bottom: 8px;
+            transition: background 0.3s ease;
+        }
+        
+        .slider:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #00ffff, #0099cc);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 255, 255, 0.5);
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #00ffff, #0099cc);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 255, 255, 0.3);
+        }
+        
+        .value-display {
+            font-size: 11px;
+            color: #00ffff;
+            text-align: right;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 14px;
+            margin: 6px 0;
+            background: linear-gradient(135deg, #4a4a4a, #5a5a5a);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .button:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #5a5a5a, #6a6a6a);
+            border-color: rgba(0, 255, 255, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .button.primary {
+            background: linear-gradient(135deg, #00ddff, #0099cc);
+            color: #000000;
+            border-color: #00ddff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+        }
+        
+        .button.primary:hover {
+            background: linear-gradient(135deg, #33ffff, #00bbee);
+            box-shadow: 0 4px 16px rgba(0, 255, 255, 0.4);
+        }
+        
+        .button.warning {
+            background: linear-gradient(135deg, #ff9900, #cc7700);
+            color: #000000;
+            border-color: #ff9900;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+        }
+        
+        .button.warning:hover {
+            background: linear-gradient(135deg, #ffaa22, #dd8800);
+            box-shadow: 0 4px 16px rgba(255, 153, 0, 0.4);
+        }
+        
+        .button.danger {
+            background: linear-gradient(135deg, #ff5555, #cc3333);
+            color: #ffffff;
+            border-color: #ff5555;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            font-weight: 700;
+        }
+        
+        .button.danger:hover {
+            background: linear-gradient(135deg, #ff7777, #dd4444);
+            box-shadow: 0 4px 16px rgba(255, 85, 85, 0.4);
+        }
+        
+        .material-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .material-btn {
+            padding: 12px 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .material-btn:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .material-btn.active {
+            border-color: #00ffff;
+            box-shadow: 0 0 16px rgba(0, 255, 255, 0.4);
+            transform: translateY(-1px);
+            color: #ffffff;
+            font-weight: 800;
+        }
+        
+        .legend {
+            margin-top: 24px;
+            font-size: 11px;
+        }
+        
+        .legend h4 {
+            margin: 0 0 12px 0;
+            color: #00ffff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 10px;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 12px;
+            margin-right: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        .stats {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .stats > div:first-child {
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .title {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .title h1 {
+            margin: 0 0 8px 0;
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00ffff, #ffffff, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+        
+        .title p {
+            margin: 0;
+            font-size: 12px;
+            color: #888;
+            font-weight: 400;
+        }
+        
+        .controls h3 {
+            margin: 0 0 20px 0;
+            color: #00ffff;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        
+        .controls h4 {
+            margin: 24px 0 12px 0;
+            color: #00ffff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="simulation-area">
+            <div class="title">
+                <h1>⚡ Lightning Path Simulator ⚡</h1>
+                <p>Click and drag to place materials • Space to trigger • Pause to control • R to reset</p>
+            </div>
+            <canvas id="simulationCanvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="controls">
+            <h3>⚙️ Simulation Controls</h3>
+            
+            <div class="control-group">
+                <label for="dischargeStrength">Discharge Strength</label>
+                <input type="range" id="dischargeStrength" class="slider" min="1" max="20" value="10">
+                <div class="value-display" id="dischargeValue">10</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="conductivityThreshold">Conductivity Threshold</label>
+                <input type="range" id="conductivityThreshold" class="slider" min="0.1" max="1.0" step="0.1" value="0.5">
+                <div class="value-display" id="conductivityValue">0.5</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="arcRandomness">Arc Randomness</label>
+                <input type="range" id="arcRandomness" class="slider" min="0" max="100" value="30">
+                <div class="value-display" id="randomnessValue">30%</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="burnTrails">Burn Trail Duration</label>
+                <input type="range" id="burnTrails" class="slider" min="0" max="100" value="50">
+                <div class="value-display" id="burnValue">50 frames</div>
+            </div>
+            
+            <h4>🛠️ Materials</h4>
+            <div class="material-buttons">
+                <div class="material-btn active" data-material="air" style="background: #001133;">Air</div>
+                <div class="material-btn" data-material="conductor" style="background: #FFD700; color: #000;">Wire</div>
+                <div class="material-btn" data-material="insulator" style="background: #8B4513;">Insulator</div>
+                <div class="material-btn" data-material="ground" style="background: #5D4037;">Ground</div>
+                <div class="material-btn" data-material="cloud" style="background: #4169E1;">Cloud</div>
+                <div class="material-btn" data-material="semicond" style="background: #FF6B35;">Semi-Cond</div>
+            </div>
+            
+            <button id="pauseBtn" class="button warning" onclick="togglePause()">⏸️ Pause</button>
+            <button class="button primary" onclick="triggerLightning()">⚡ Trigger Lightning</button>
+            <button class="button primary" onclick="multiStrike()">🌩️ Multi-Strike</button>
+            <button id="autoBtn" class="button" onclick="toggleAutoStrike()">🤖 Auto Strike</button>
+            <button class="button" onclick="clearGrid()">🧹 Clear Grid</button>
+            <button class="button" onclick="setupDemo()">🎯 Load Demo</button>
+            <button class="button danger" onclick="resetSimulation()">🔄 Reset All</button>
+            
+            <div class="stats">
+                <div><strong>Stats:</strong></div>
+                <div id="lastStrike">Last Strike: None</div>
+                <div id="pathLength">Path Length: 0</div>
+                <div id="branches">Branches: 0</div>
+                <div id="strikeCount">Total Strikes: 0</div>
+            </div>
+            
+            <div class="legend">
+                <h4>🎨 Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #001133;"></div>
+                    <span>Air (Low conductivity)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FFD700;"></div>
+                    <span>Wire/Conductor (High)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #8B4513;"></div>
+                    <span>Insulator (Blocks)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #5D4037;"></div>
+                    <span>Ground (Target)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4169E1;"></div>
+                    <span>Cloud (Source)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FF6B35;"></div>
+                    <span>Semi-Conductor</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="lightning-simulator.js"></script>
+</body>
+</html> 

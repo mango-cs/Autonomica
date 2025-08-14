@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Flow Painter</title>
+    <style>
+        /* Global Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #121212;
+            color: #f0f0f0;
+            font-family: 'Arial', sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #f0f0f0;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Canvas Styles */
+        #canvas-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            background-color: #000;
+        }
+
+        /* Controls Styles */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .slider-container {
+            display: grid;
+            grid-template-columns: 150px 1fr 50px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #4f8fff;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 4px;
+            background: none;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4f8fff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #3a7aff;
+        }
+
+        .value-display {
+            font-size: 14px;
+            text-align: right;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            .controls {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Pixel Flow Painter</h1>
+    
+    <div id="canvas-container">
+        <canvas id="canvas" width="500" height="500"></canvas>
+    </div>
+    
+    <div class="controls">
+        <div class="slider-container">
+            <label for="color-picker">Brush Color:</label>
+            <input type="color" id="color-picker" value="#ffffff">
+            <div class="value-display"></div>
+        </div>
+        
+        <div class="slider-container">
+            <label for="brush-intensity">Brush Intensity:</label>
+            <input type="range" id="brush-intensity" min="0.1" max="1.0" step="0.1" value="1.0">
+            <div class="value-display" id="brush-intensity-value">1.0</div>
+        </div>
+        
+        <div class="slider-container">
+            <label for="brush-size">Brush Size:</label>
+            <input type="range" id="brush-size" min="1" max="10" step="1" value="3">
+            <div class="value-display" id="brush-size-value">3</div>
+        </div>
+        
+        <div class="slider-container">
+            <label for="fade-speed">Fade Speed:</label>
+            <input type="range" id="fade-speed" min="0.001" max="0.03" step="0.001" value="0.01">
+            <div class="value-display" id="fade-speed-value">0.01</div>
+        </div>
+        
+        <div class="slider-container">
+            <label for="diffusion-speed">Diffusion Speed:</label>
+            <input type="range" id="diffusion-speed" min="0.05" max="0.5" step="0.05" value="0.2">
+            <div class="value-display" id="diffusion-speed-value">0.2</div>
+        </div>
+        
+        <button id="clear-canvas">Clear Canvas</button>
+    </div>
+
+    <script>
+        // Main Application
+        document.addEventListener('DOMContentLoaded', () => {
+            // ====== Canvas Setup ======
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // ====== Grid Settings ======
+            // We'll use a resolution where each cell is 1x1 pixel on the canvas
+            const cellSize = 1;
+            const cols = Math.floor(width / cellSize);
+            const rows = Math.floor(height / cellSize);
+            
+            // ====== State Variables ======
+            // Two grids for the simulation (current and next state)
+            let currentGrid = createGrid(cols, rows);
+            let nextGrid = createGrid(cols, rows);
+            
+            // Drawing state
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+            
+            // ====== Controls ======
+            const colorPicker = document.getElementById('color-picker');
+            const brushIntensity = document.getElementById('brush-intensity');
+            const brushSize = document.getElementById('brush-size');
+            const fadeSpeed = document.getElementById('fade-speed');
+            const diffusionSpeed = document.getElementById('diffusion-speed');
+            const clearButton = document.getElementById('clear-canvas');
+            
+            // Update value displays
+            updateValueDisplays();
+            
+            // ====== Helper Functions ======
+            
+            // Create a 2D grid with initial values
+            function createGrid(cols, rows) {
+                const grid = new Array(cols);
+                for (let i = 0; i < cols; i++) {
+                    grid[i] = new Array(rows).fill(0);
+                }
+                return grid;
+            }
+            
+            // Helper to convert color string to RGB
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : {r: 255, g: 255, b: 255};
+            }
+            
+            // Update the value displays for sliders
+            function updateValueDisplays() {
+                document.getElementById('brush-intensity-value').textContent = brushIntensity.value;
+                document.getElementById('brush-size-value').textContent = brushSize.value;
+                document.getElementById('fade-speed-value').textContent = fadeSpeed.value;
+                document.getElementById('diffusion-speed-value').textContent = diffusionSpeed.value;
+            }
+            
+            // Draw on the grid
+            function draw(x, y) {
+                const intensity = parseFloat(brushIntensity.value);
+                const size = parseInt(brushSize.value);
+                
+                // Calculate grid coordinates
+                const gridX = Math.floor(x / cellSize);
+                const gridY = Math.floor(y / cellSize);
+                
+                // Apply brush with size and intensity to grid
+                for (let dx = -size; dx <= size; dx++) {
+                    for (let dy = -size; dy <= size; dy++) {
+                        const nx = gridX + dx;
+                        const ny = gridY + dy;
+                        
+                        // Check if within bounds
+                        if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                            // Calculate distance from center for circular brush
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist <= size) {
+                                // Apply intensity with distance falloff
+                                const falloff = 1 - dist / size;
+                                const value = intensity * falloff;
+                                currentGrid[nx][ny] = Math.min(1, currentGrid[nx][ny] + value);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Line drawing using Bresenham's algorithm for smooth drawing
+            function drawLine(x0, y0, x1, y1) {
+                const dx = Math.abs(x1 - x0);
+                const dy = Math.abs(y1 - y0);
+                const sx = (x0 < x1) ? 1 : -1;
+                const sy = (y0 < y1) ? 1 : -1;
+                let err = dx - dy;
+                
+                while (true) {
+                    draw(x0, y0);
+                    
+                    if (x0 === x1 && y0 === y1) break;
+                    const e2 = 2 * err;
+                    if (e2 > -dy) {
+                        if (x0 === x1) break;
+                        err -= dy;
+                        x0 += sx;
+                    }
+                    if (e2 < dx) {
+                        if (y0 === y1) break;
+                        err += dx;
+                        y0 += sy;
+                    }
+                }
+            }
+            
+            // ====== Simulation Logic ======
+            
+            // Update the grid for the next frame
+            function updateGrid() {
+                const fadeRate = parseFloat(fadeSpeed.value);
+                const diffusionRate = parseFloat(diffusionSpeed.value);
+                
+                // Apply diffusion and fading
+                for (let x = 0; x < cols; x++) {
+                    for (let y = 0; y < rows; y++) {
+                        // Apply fading
+                        let val = currentGrid[x][y] * (1 - fadeRate);
+                        
+                        // Skip computation for near-zero values for performance
+                        if (val < 0.001) {
+                            nextGrid[x][y] = 0;
+                            continue;
+                        }
+                        
+                        // Apply diffusion (average of neighbors)
+                        let sum = 0;
+                        let count = 0;
+                        
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                const nx = x + dx;
+                                const ny = y + dy;
+                                
+                                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                                    sum += currentGrid[nx][ny];
+                                    count++;
+                                }
+                            }
+                        }
+                        
+                        // Calculate the blend of current value and neighbors
+                        const average = sum / count;
+                        val = val * (1 - diffusionRate) + average * diffusionRate;
+                        
+                        nextGrid[x][y] = Math.max(0, Math.min(1, val));
+                    }
+                }
+                
+                // Swap grids
+                [currentGrid, nextGrid] = [nextGrid, currentGrid];
+            }
+            
+            // Render the grid to canvas
+            function render() {
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Create imageData for efficient rendering
+                const imageData = ctx.createImageData(width, height);
+                const data = imageData.data;
+                
+                // Get brush color
+                const rgb = hexToRgb(colorPicker.value);
+                
+                // Fill the image data
+                for (let x = 0; x < cols; x++) {
+                    for (let y = 0; y < rows; y++) {
+                        const value = currentGrid[x][y];
+                        
+                        // Skip calculations for zero values for performance
+                        if (value <= 0) continue;
+                        
+                        const index = (y * width + x) * 4;
+                        
+                        // Apply color with intensity
+                        data[index] = rgb.r * value;     // R
+                        data[index + 1] = rgb.g * value; // G
+                        data[index + 2] = rgb.b * value; // B
+                        data[index + 3] = 255 * value;   // A
+                    }
+                }
+                
+                // Put the image data to canvas
+                ctx.putImageData(imageData, 0, 0);
+            }
+            
+            // Main animation loop
+            function animate() {
+                updateGrid();
+                render();
+                requestAnimationFrame(animate);
+            }
+            
+            // ====== Event Listeners ======
+            
+            // Mouse interactions
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+                draw(lastX, lastY);
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDrawing) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    drawLine(lastX, lastY, x, y);
+                    lastX = x;
+                    lastY = y;
+                }
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                isDrawing = false;
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                isDrawing = false;
+            });
+            
+            // Touch interactions for mobile
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                lastX = touch.clientX - rect.left;
+                lastY = touch.clientY - rect.top;
+                draw(lastX, lastY);
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (isDrawing) {
+                    const rect = canvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    drawLine(lastX, lastY, x, y);
+                    lastX = x;
+                    lastY = y;
+                }
+            });
+            
+            canvas.addEventListener('touchend', () => {
+                isDrawing = false;
+            });
+            
+            // UI control events
+            brushIntensity.addEventListener('input', updateValueDisplays);
+            brushSize.addEventListener('input', updateValueDisplays);
+            fadeSpeed.addEventListener('input', updateValueDisplays);
+            diffusionSpeed.addEventListener('input', updateValueDisplays);
+            
+            clearButton.addEventListener('click', () => {
+                currentGrid = createGrid(cols, rows);
+                nextGrid = createGrid(cols, rows);
+            });
+            
+            // Start the animation loop
+            animate();
+        });
+    </script>
+</body>
+</html>

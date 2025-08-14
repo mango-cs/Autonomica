@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Propagation Cellular Automaton</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            min-height: 100vh;
+            user-select: none;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.3);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff6b35;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff6b35;
+            cursor: pointer;
+            border: none;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .btn-start { background: #4CAF50; color: white; }
+        .btn-stop { background: #f44336; color: white; }
+        .btn-reset { background: #ff9800; color: white; }
+        .btn-ignite { background: #ff5722; color: white; }
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid transparent;
+        }
+        .mode-btn.active {
+            background: rgba(255,255,255,0.3);
+            border-color: #ff6b35;
+        }
+        .simulation-area {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .canvas-container {
+            flex: 1;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        #canvas {
+            display: block;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .legend {
+            min-width: 200px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .legend h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .stats {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .wind-indicator {
+            text-align: center;
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        .value-display {
+            min-width: 40px;
+            text-align: right;
+            font-weight: bold;
+        }
+        .keyboard-shortcuts {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .keyboard-shortcuts h5 {
+            margin: 0 0 8px 0;
+        }
+        .shortcut {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        
+        @media (max-width: 768px) {
+            .simulation-area {
+                flex-direction: column;
+            }
+            .legend {
+                min-width: auto;
+            }
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Fire Propagation Cellular Automaton</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h3>🎮 Simulation Controls</h3>
+                <button id="startBtn" class="btn-start">Start (Space)</button>
+                <button id="stopBtn" class="btn-stop">Stop (Esc)</button>
+                <button id="resetBtn" class="btn-reset">Reset (R)</button>
+                <button id="igniteBtn" class="btn-ignite">Random Ignition (I)</button>
+            </div>
+            
+            <div class="control-group">
+                <h3>🌬️ Environmental Factors</h3>
+                <div class="control-row">
+                    <label>Wind Speed:</label>
+                    <input type="range" id="windSpeed" min="0" max="10" value="3" step="0.1">
+                    <span class="value-display" id="windSpeedVal">3.0</span>
+                </div>
+                <div class="control-row">
+                    <label>Wind Direction:</label>
+                    <input type="range" id="windDirection" min="0" max="360" value="90" step="5">
+                    <span class="value-display" id="windDirectionVal">90°</span>
+                </div>
+                <div class="control-row">
+                    <label>Base Fuel:</label>
+                    <input type="range" id="baseFuel" min="0" max="1" value="0.7" step="0.01">
+                    <span class="value-display" id="baseFuelVal">0.70</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🔥 Fire Properties</h3>
+                <div class="control-row">
+                    <label>Ignition Rate:</label>
+                    <input type="range" id="ignitionRate" min="0" max="1" value="0.4" step="0.01">
+                    <span class="value-display" id="ignitionRateVal">0.40</span>
+                </div>
+                <div class="control-row">
+                    <label>Burn Duration:</label>
+                    <input type="range" id="burnDuration" min="5" max="50" value="15" step="1">
+                    <span class="value-display" id="burnDurationVal">15</span>
+                </div>
+                <div class="control-row">
+                    <label>Cool Duration:</label>
+                    <input type="range" id="coolDuration" min="10" max="100" value="30" step="1">
+                    <span class="value-display" id="coolDurationVal">30</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🖱️ Interaction Mode</h3>
+                <div class="mode-buttons">
+                    <button class="mode-btn active" data-mode="ignite">🔥 Ignite (1)</button>
+                    <button class="mode-btn" data-mode="water">💧 Water (2)</button>
+                    <button class="mode-btn" data-mode="firebreak">🚧 Firebreak (3)</button>
+                    <button class="mode-btn" data-mode="fuel">🌿 Add Fuel (4)</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="simulation-area">
+            <div class="canvas-container">
+                <canvas id="canvas" width="800" height="600"></canvas>
+            </div>
+            
+            <div class="legend">
+                <h3>Legend</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #8B4513;"></div>
+                    <span>Unburnt (Fuel)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FF4500;"></div>
+                    <span>Burning</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #696969;"></div>
+                    <span>Burnt/Cooling</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #000000;"></div>
+                    <span>Ash (Inert)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4169E1;"></div>
+                    <span>Water</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #A0A0A0;"></div>
+                    <span>Firebreak</span>
+                </div>
+                
+                <div class="wind-indicator">
+                    <div>Wind: <span id="windArrow">→</span></div>
+                </div>
+                
+                <div class="stats">
+                    <h4>Statistics</h4>
+                    <div class="stat">
+                        <span>Unburnt:</span>
+                        <span id="unburntCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>Burning:</span>
+                        <span id="burningCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>Burnt:</span>
+                        <span id="burntCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>Generation:</span>
+                        <span id="generation">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>FPS:</span>
+                        <span id="fps">0</span>
+                    </div>
+                </div>
+                
+                <div class="keyboard-shortcuts">
+                    <h5>⌨️ Keyboard Shortcuts</h5>
+                    <div class="shortcut"><span>Space</span><span>Start/Stop</span></div>
+                    <div class="shortcut"><span>R</span><span>Reset</span></div>
+                    <div class="shortcut"><span>I</span><span>Ignite</span></div>
+                    <div class="shortcut"><span>1-4</span><span>Switch Mode</span></div>
+                    <div class="shortcut"><span>Esc</span><span>Stop</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class FireAutomaton {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.width = Math.floor(canvas.width / 4);
+                this.height = Math.floor(canvas.height / 4);
+                this.cellSize = 4;
+                
+                // Cell state constants
+                this.UNBURNT = 0;
+                this.BURNING = 1;
+                this.BURNT = 2;
+                this.ASH = 3;
+                this.WATER = 4;
+                this.FIREBREAK = 5;
+                
+                // Initialize grids
+                this.grid = this.createGrid();
+                this.nextGrid = this.createGrid();
+                this.burnTimer = this.createTimerGrid();
+                this.coolTimer = this.createTimerGrid();
+                this.fuelIntensity = this.createFuelGrid();
+                this.terrainResistance = this.createTerrainGrid();
+                
+                // Simulation parameters
+                this.windSpeed = 3.0;
+                this.windDirection = 90;
+                this.baseFuelIntensity = 0.7;
+                this.baseIgnitionRate = 0.4;
+                this.burnDuration = 15;
+                this.coolDuration = 30;
+                this.generation = 0;
+                
+                // UI state
+                this.interactionMode = 'ignite';
+                this.isRunning = false;
+                this.animationId = null;
+                
+                // Performance tracking
+                this.lastFrameTime = 0;
+                this.fps = 0;
+                this.frameCount = 0;
+                this.fpsUpdateTime = 0;
+                
+                this.initializeEnvironment();
+                this.setupEventListeners();
+                this.updateDisplay();
+            }
+            
+            createGrid() {
+                return Array(this.height).fill(null).map(() => Array(this.width).fill(this.UNBURNT));
+            }
+            
+            createTimerGrid() {
+                return Array(this.height).fill(null).map(() => Array(this.width).fill(0));
+            }
+            
+            createFuelGrid() {
+                const grid = Array(this.height).fill(null).map(() => Array(this.width).fill(0));
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        const noise = (Math.sin(x * 0.1) + Math.cos(y * 0.15)) * 0.2;
+                        const distance = Math.sqrt((x - this.width/2)**2 + (y - this.height/2)**2);
+                        const radialFactor = Math.max(0, 1 - distance / (Math.min(this.width, this.height) * 0.4));
+                        grid[y][x] = Math.max(0.1, Math.min(1, this.baseFuelIntensity + noise + radialFactor * 0.3));
+                    }
+                }
+                return grid;
+            }
+            
+            createTerrainGrid() {
+                const grid = Array(this.height).fill(null).map(() => Array(this.width).fill(0));
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        const noise = Math.random() * 0.3;
+                        const elevation = Math.sin(x * 0.05) * Math.cos(y * 0.07) * 0.4;
+                        grid[y][x] = Math.max(0, Math.min(0.8, 0.2 + noise + elevation));
+                    }
+                }
+                return grid;
+            }
+            
+            initializeEnvironment() {
+                // Create natural water bodies and firebreaks
+                for (let i = 0; i < 5; i++) {
+                    const x = Math.floor(Math.random() * this.width);
+                    const y = Math.floor(Math.random() * this.height);
+                    const size = Math.floor(Math.random() * 8) + 3;
+                    
+                    for (let dy = -size; dy <= size; dy++) {
+                        for (let dx = -size; dx <= size; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                                const dist = Math.sqrt(dx*dx + dy*dy);
+                                if (dist <= size && Math.random() < 0.7) {
+                                    this.grid[ny][nx] = Math.random() < 0.3 ? this.WATER : this.FIREBREAK;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            setupEventListeners() {
+                // Canvas interaction
+                this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMove(e));
+                
+                // Touch support for mobile
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.handleCanvasTouch(touch);
+                }, { passive: false });
+                
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.handleCanvasTouch(touch);
+                }, { passive: false });
+                
+                // Control buttons
+                document.getElementById('startBtn').addEventListener('click', () => this.toggleSimulation());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('igniteBtn').addEventListener('click', () => this.randomIgnition());
+                
+                // Parameter controls
+                this.setupParameterControl('windSpeed', 'windSpeedVal', (val) => this.windSpeed = parseFloat(val));
+                this.setupParameterControl('windDirection', 'windDirectionVal', (val) => {
+                    this.windDirection = parseInt(val);
+                    this.updateWindArrow();
+                }, '°');
+                this.setupParameterControl('baseFuel', 'baseFuelVal', (val) => {
+                    this.baseFuelIntensity = parseFloat(val);
+                    this.fuelIntensity = this.createFuelGrid();
+                });
+                this.setupParameterControl('ignitionRate', 'ignitionRateVal', (val) => this.baseIgnitionRate = parseFloat(val));
+                this.setupParameterControl('burnDuration', 'burnDurationVal', (val) => this.burnDuration = parseInt(val));
+                this.setupParameterControl('coolDuration', 'coolDurationVal', (val) => this.coolDuration = parseInt(val));
+                
+                // Mode buttons
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.interactionMode = btn.dataset.mode;
+                    });
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
+                this.updateWindArrow();
+            }
+            
+            handleKeyboard(e) {
+                switch(e.code) {
+                    case 'Space':
+                        e.preventDefault();
+                        this.toggleSimulation();
+                        break;
+                    case 'Escape':
+                        this.stop();
+                        break;
+                    case 'KeyR':
+                        this.reset();
+                        break;
+                    case 'KeyI':
+                        this.randomIgnition();
+                        break;
+                    case 'Digit1':
+                        this.setMode('ignite');
+                        break;
+                    case 'Digit2':
+                        this.setMode('water');
+                        break;
+                    case 'Digit3':
+                        this.setMode('firebreak');
+                        break;
+                    case 'Digit4':
+                        this.setMode('fuel');
+                        break;
+                }
+            }
+            
+            setMode(mode) {
+                this.interactionMode = mode;
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+            }
+            
+            toggleSimulation() {
+                if (this.isRunning) {
+                    this.stop();
+                } else {
+                    this.start();
+                }
+            }
+            
+            setupParameterControl(id, displayId, callback, suffix = '') {
+                const control = document.getElementById(id);
+                const display = document.getElementById(displayId);
+                
+                control.addEventListener('input', () => {
+                    const value = control.value;
+                    callback(value);
+                    display.textContent = parseFloat(value).toFixed(suffix ? 0 : 2) + suffix;
+                });
+            }
+            
+            updateWindArrow() {
+                const arrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
+                const index = Math.round(this.windDirection / 45) % 8;
+                document.getElementById('windArrow').textContent = arrows[index];
+            }
+            
+            handleCanvasClick(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / this.cellSize);
+                const y = Math.floor((e.clientY - rect.top) / this.cellSize);
+                
+                if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                    this.applyCellInteraction(x, y);
+                    this.updateDisplay();
+                }
+            }
+            
+            handleCanvasMove(e) {
+                if (e.buttons === 1) {
+                    this.handleCanvasClick(e);
+                }
+            }
+            
+            handleCanvasTouch(touch) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = Math.floor((touch.clientX - rect.left) / this.cellSize);
+                const y = Math.floor((touch.clientY - rect.top) / this.cellSize);
+                
+                if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                    this.applyCellInteraction(x, y);
+                    this.updateDisplay();
+                }
+            }
+            
+            applyCellInteraction(x, y) {
+                const radius = 2;
+                
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height && 
+                            dist <= radius && Math.random() < 0.7) {
+                            
+                            switch (this.interactionMode) {
+                                case 'ignite':
+                                    if (this.grid[ny][nx] === this.UNBURNT) {
+                                        this.grid[ny][nx] = this.BURNING;
+                                        this.burnTimer[ny][nx] = this.burnDuration;
+                                    }
+                                    break;
+                                case 'water':
+                                    this.grid[ny][nx] = this.WATER;
+                                    this.burnTimer[ny][nx] = 0;
+                                    this.coolTimer[ny][nx] = 0;
+                                    break;
+                                case 'firebreak':
+                                    this.grid[ny][nx] = this.FIREBREAK;
+                                    this.burnTimer[ny][nx] = 0;
+                                    this.coolTimer[ny][nx] = 0;
+                                    break;
+                                case 'fuel':
+                                    if (this.grid[ny][nx] === this.UNBURNT) {
+                                        this.fuelIntensity[ny][nx] = Math.min(1, this.fuelIntensity[ny][nx] + 0.3);
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            randomIgnition() {
+                for (let i = 0; i < 3; i++) {
+                    const x = Math.floor(Math.random() * this.width);
+                    const y = Math.floor(Math.random() * this.height);
+                    if (this.grid[y][x] === this.UNBURNT) {
+                        this.grid[y][x] = this.BURNING;
+                        this.burnTimer[y][x] = this.burnDuration;
+                    }
+                }
+                this.updateDisplay();
+            }
+            
+            getNeighbors(x, y) {
+                const neighbors = [];
+                const directions = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1]
+                ];
+                
+                for (let [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+                        neighbors.push({x: nx, y: ny, dx, dy});
+                    }
+                }
+                return neighbors;
+            }
+            
+            calculateIgnitionProbability(x, y, burningNeighbor) {
+                const fuel = this.fuelIntensity[y][x];
+                const terrain = this.terrainResistance[y][x];
+                
+                // Base probability
+                let prob = this.baseIgnitionRate * fuel * (1 - terrain);
+                
+                // Wind effect calculation
+                const windRad = (this.windDirection * Math.PI) / 180;
+                const windX = Math.cos(windRad);
+                const windY = Math.sin(windRad);
+                
+                // Direction from burning cell to current cell
+                const dirX = x - burningNeighbor.x;
+                const dirY = y - burningNeighbor.y;
+                const dirLength = Math.sqrt(dirX*dirX + dirY*dirY);
+                
+                if (dirLength > 0) {
+                    const normalizedDirX = dirX / dirLength;
+                    const normalizedDirY = dirY / dirLength;
+                    
+                    // Wind alignment effect
+                    const windAlignment = windX * normalizedDirX + windY * normalizedDirY;
+                    const windEffect = 1 + (windAlignment * this.windSpeed * 0.1);
+                    
+                    prob *= windEffect;
+                }
+                
+                // Distance effect (diagonal neighbors spread slower)
+                const distance = Math.sqrt(burningNeighbor.dx*burningNeighbor.dx + burningNeighbor.dy*burningNeighbor.dy);
+                if (distance > 1) {
+                    prob *= 0.8;
+                }
+                
+                return Math.max(0, Math.min(1, prob));
+            }
+            
+            step() {
+                // Copy current grid to next grid
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        this.nextGrid[y][x] = this.grid[y][x];
+                    }
+                }
+                
+                // Process each cell
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        const currentState = this.grid[y][x];
+                        
+                        switch (currentState) {
+                            case this.UNBURNT:
+                                // Check ignition from burning neighbors
+                                const neighbors = this.getNeighbors(x, y);
+                                for (let neighbor of neighbors) {
+                                    if (this.grid[neighbor.y][neighbor.x] === this.BURNING) {
+                                        const ignitionProb = this.calculateIgnitionProbability(x, y, neighbor);
+                                        if (Math.random() < ignitionProb) {
+                                            this.nextGrid[y][x] = this.BURNING;
+                                            this.burnTimer[y][x] = this.burnDuration;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                                
+                            case this.BURNING:
+                                // Burn countdown
+                                this.burnTimer[y][x]--;
+                                if (this.burnTimer[y][x] <= 0) {
+                                    this.nextGrid[y][x] = this.BURNT;
+                                    this.coolTimer[y][x] = this.coolDuration;
+                                }
+                                break;
+                                
+                            case this.BURNT:
+                                // Cool countdown
+                                this.coolTimer[y][x]--;
+                                if (this.coolTimer[y][x] <= 0) {
+                                    this.nextGrid[y][x] = this.ASH;
+                                }
+                                break;
+                        }
+                    }
+                }
+                
+                // Swap grids
+                [this.grid, this.nextGrid] = [this.nextGrid, this.grid];
+                this.generation++;
+            }
+            
+            updateDisplay() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        const state = this.grid[y][x];
+                        let color;
+                        
+                        switch (state) {
+                            case this.UNBURNT:
+                                const fuel = this.fuelIntensity[y][x];
+                                const greenTint = Math.floor(fuel * 100);
+                                color = `rgb(${139 + greenTint}, ${69 + greenTint}, 19)`;
+                                break;
+                            case this.BURNING:
+                                const burnIntensity = this.burnTimer[y][x] / this.burnDuration;
+                                const red = Math.floor(255 * Math.max(0.7, burnIntensity));
+                                const green = Math.floor(69 * burnIntensity);
+                                color = `rgb(${red}, ${green}, 0)`;
+                                break;
+                            case this.BURNT:
+                                const coolIntensity = this.coolTimer[y][x] / this.coolDuration;
+                                const greyLevel = Math.floor(105 + (50 * coolIntensity));
+                                color = `rgb(${greyLevel}, ${greyLevel}, ${greyLevel})`;
+                                break;
+                            case this.ASH:
+                                color = '#000000';
+                                break;
+                            case this.WATER:
+                                color = '#4169E1';
+                                break;
+                            case this.FIREBREAK:
+                                color = '#A0A0A0';
+                                break;
+                        }
+                        
+                        this.ctx.fillStyle = color;
+                        this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                    }
+                }
+                
+                this.updateStats();
+            }
+            
+            updateStats() {
+                let unburnt = 0, burning = 0, burnt = 0;
+                
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        switch (this.grid[y][x]) {
+                            case this.UNBURNT: unburnt++; break;
+                            case this.BURNING: burning++; break;
+                            case this.BURNT: case this.ASH: burnt++; break;
+                        }
+                    }
+                }
+                
+                document.getElementById('unburntCount').textContent = unburnt;
+                document.getElementById('burningCount').textContent = burning;
+                document.getElementById('burntCount').textContent = burnt;
+                document.getElementById('generation').textContent = this.generation;
+                document.getElementById('fps').textContent = Math.round(this.fps);
+            }
+            
+            updateFPS(currentTime) {
+                this.frameCount++;
+                if (currentTime - this.fpsUpdateTime >= 1000) {
+                    this.fps = this.frameCount;
+                    this.frameCount = 0;
+                    this.fpsUpdateTime = currentTime;
+                }
+            }
+            
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.lastFrameTime = performance.now();
+                    this.fpsUpdateTime = this.lastFrameTime;
+                    this.animate();
+                }
+            }
+            
+            stop() {
+                this.isRunning = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+            }
+            
+            reset() {
+                this.stop();
+                this.grid = this.createGrid();
+                this.burnTimer = this.createTimerGrid();
+                this.coolTimer = this.createTimerGrid();
+                this.fuelIntensity = this.createFuelGrid();
+                this.terrainResistance = this.createTerrainGrid();
+                this.generation = 0;
+                this.fps = 0;
+                this.frameCount = 0;
+                this.initializeEnvironment();
+                this.updateDisplay();
+            }
+            
+            animate() {
+                if (this.isRunning) {
+                    const currentTime = performance.now();
+                    this.updateFPS(currentTime);
+                    
+                    if (currentTime - this.lastFrameTime >= 120) { // ~8 FPS
+                        this.step();
+                        this.updateDisplay();
+                        this.lastFrameTime = currentTime;
+                    }
+                    
+                    this.animationId = requestAnimationFrame(() => this.animate());
+                }
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('canvas');
+            const automaton = new FireAutomaton(canvas);
+            
+            // Prevent context menu on right click
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        });
+    </script>
+</body>
+</html>

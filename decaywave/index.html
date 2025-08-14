@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decay Wave Cellular Automaton</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #64ffda;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #b0bec5;
+            font-style: italic;
+        }
+        
+        .control-panel {
+            background: rgba(55, 71, 79, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 255, 218, 0.1);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .control-section h3 {
+            margin: 0;
+            color: #64ffda;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .parameters-section {
+            grid-column: 1 / -1;
+        }
+        
+        .parameters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        button {
+            background: linear-gradient(145deg, #2196f3, #1976d2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.danger {
+            background: linear-gradient(145deg, #f44336, #d32f2f);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+        
+        button.danger:hover {
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+        
+        .parameter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+            background: rgba(37, 47, 79, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(100, 255, 218, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .parameter-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(100, 255, 218, 0.1);
+            border-color: rgba(100, 255, 218, 0.3);
+        }
+        
+        .parameter-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .parameter-icon {
+            font-size: 1.2em;
+        }
+        
+        .parameter-label {
+            color: #e0e0e0;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-align: center;
+        }
+        
+        .slider-wrapper {
+            position: relative;
+            padding: 10px 0;
+        }
+        
+        .parameter-value {
+            color: #64ffda;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1em;
+            padding: 8px;
+            background: rgba(100, 255, 218, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #37474f 0%, #37474f 100%);
+            outline: none;
+            -webkit-appearance: none;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="range"]:hover {
+            height: 8px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #64ffda, #4fc3f7);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(100, 255, 218, 0.6);
+            transition: all 0.2s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.8);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #64ffda, #4fc3f7);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(100, 255, 218, 0.6);
+            border: none;
+        }
+        
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        canvas {
+            border: 3px solid #37474f;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+        }
+        
+        .bottom-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .info-panel {
+            background: rgba(55, 71, 79, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 255, 218, 0.1);
+        }
+        
+        .info-panel h3 {
+            margin: 0 0 20px 0;
+            color: #64ffda;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background: rgba(37, 47, 79, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(100, 255, 218, 0.1);
+        }
+        
+        .stat-label {
+            color: #b0bec5;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            color: #64ffda;
+            font-weight: bold;
+            font-size: 1.4em;
+        }
+        
+        .instructions {
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+        }
+        
+        .instructions h3 {
+            margin: 0 0 20px 0;
+            color: #64ffda;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        .instructions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .instruction-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 15px;
+            background: rgba(37, 47, 79, 0.2);
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .instruction-item strong {
+            color: #64ffda;
+            font-size: 0.95em;
+        }
+        
+        .instruction-item span {
+            color: #e0e0e0;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 768px) {
+            .bottom-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Decay Wave Cellular Automaton</h1>
+        <p class="subtitle">Interactive cellular dynamics with energy decay and wave propagation</p>
+        
+        <div class="control-panel">
+            <div class="control-section">
+                <h3>Animation Controls</h3>
+                <div class="button-group">
+                    <button id="startBtn">▷ Start</button>
+                    <button id="pauseBtn">⏸ Pause</button>
+                    <button id="resetBtn" class="danger">↻ Reset</button>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>Cell Generation</h3>
+                <div class="button-group">
+                    <button id="randomBtn">◈ Random Seed</button>
+                    <button id="clearBtn" class="danger">✕ Clear All</button>
+                </div>
+            </div>
+            
+            <div class="control-section parameters-section">
+                <h3>⚙️ Simulation Parameters</h3>
+                <div class="parameters-grid">
+                    <div class="parameter-item">
+                        <div class="parameter-header">
+                            <span class="parameter-icon">🕐</span>
+                            <span class="parameter-label">Animation Speed</span>
+                        </div>
+                        <div class="slider-wrapper">
+                            <input type="range" id="speedSlider" min="10" max="500" value="100">
+                            <div class="slider-track"></div>
+                        </div>
+                        <span class="parameter-value" id="speedValue">100ms</span>
+                    </div>
+                    
+                    <div class="parameter-item">
+                        <div class="parameter-header">
+                            <span class="parameter-icon">💀</span>
+                            <span class="parameter-label">Cell Lifespan</span>
+                        </div>
+                        <div class="slider-wrapper">
+                            <input type="range" id="decaySlider" min="3" max="10" value="5">
+                            <div class="slider-track"></div>
+                        </div>
+                        <span class="parameter-value" id="decayValue">5 gen</span>
+                    </div>
+                    
+                    <div class="parameter-item">
+                        <div class="parameter-header">
+                            <span class="parameter-icon">〰️</span>
+                            <span class="parameter-label">Wave Intensity</span>
+                        </div>
+                        <div class="slider-wrapper">
+                            <input type="range" id="waveSlider" min="1" max="5" value="2">
+                            <div class="slider-track"></div>
+                        </div>
+                        <span class="parameter-value" id="waveValue">2</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="canvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="bottom-panel">
+            <div class="info-panel">
+                <h3>📊 Simulation Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Living Cells</span>
+                        <span class="stat-value" id="livingCells">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Decaying Cells</span>
+                        <span class="stat-value" id="decayingCells">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Generations</span>
+                        <span class="stat-value" id="generations">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Wave Events</span>
+                        <span class="stat-value" id="waveEvents">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3>💡 Quick Guide</h3>
+                <div class="instructions-grid">
+                    <div class="instruction-item">
+                        <strong>🖱️ Interactive Drawing</strong>
+                        <span>Click or drag on canvas to plant living cells</span>
+                    </div>
+                    <div class="instruction-item">
+                        <strong>⚡ Energy Decay</strong>
+                        <span>Watch cells fade from bright to dim as energy depletes</span>
+                    </div>
+                    <div class="instruction-item">
+                        <strong>🌊 Wave Propagation</strong>
+                        <span>Decaying cells trigger activation waves in neighbors</span>
+                    </div>
+                    <div class="instruction-item">
+                        <strong>🎛️ Parameter Tuning</strong>
+                        <span>Adjust speed, lifespan, and wave intensity for different effects</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DecayWaveCellularAutomaton {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.cellSize = 8;
+                this.rows = Math.floor(this.canvas.height / this.cellSize);
+                this.cols = Math.floor(this.canvas.width / this.cellSize);
+                
+                // Initialize grids
+                this.grid = [];
+                this.nextGrid = [];
+                this.initializeGrids();
+                
+                // Animation properties
+                this.isRunning = false;
+                this.animationId = null;
+                this.speed = 100;
+                this.maxDecay = 5;
+                this.waveStrength = 2;
+                this.generation = 0;
+                this.waveEvents = 0;
+                
+                // Mouse interaction
+                this.isMouseDown = false;
+                this.setupEventListeners();
+                
+                // Initial render
+                this.render();
+                this.updateStats();
+            }
+            
+            initializeGrids() {
+                for (let i = 0; i < this.rows; i++) {
+                    this.grid[i] = [];
+                    this.nextGrid[i] = [];
+                    for (let j = 0; j < this.cols; j++) {
+                        this.grid[i][j] = 0;
+                        this.nextGrid[i][j] = 0;
+                    }
+                }
+            }
+            
+            setupEventListeners() {
+                // Mouse events for planting cells
+                this.canvas.addEventListener('mousedown', (e) => {
+                    this.isMouseDown = true;
+                    this.plantCell(e);
+                });
+                
+                this.canvas.addEventListener('mousemove', (e) => {
+                    if (this.isMouseDown) {
+                        this.plantCell(e);
+                    }
+                });
+                
+                this.canvas.addEventListener('mouseup', () => {
+                    this.isMouseDown = false;
+                });
+                
+                this.canvas.addEventListener('mouseleave', () => {
+                    this.isMouseDown = false;
+                });
+                
+                // Control buttons
+                document.getElementById('startBtn').addEventListener('click', () => this.start());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('randomBtn').addEventListener('click', () => this.randomSeed());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clear());
+                
+                // Sliders
+                document.getElementById('speedSlider').addEventListener('input', (e) => {
+                    this.speed = parseInt(e.target.value);
+                    document.getElementById('speedValue').textContent = this.speed + 'ms';
+                });
+                
+                document.getElementById('decaySlider').addEventListener('input', (e) => {
+                    this.maxDecay = parseInt(e.target.value);
+                    document.getElementById('decayValue').textContent = this.maxDecay + ' gen';
+                });
+                
+                document.getElementById('waveSlider').addEventListener('input', (e) => {
+                    this.waveStrength = parseInt(e.target.value);
+                    document.getElementById('waveValue').textContent = this.waveStrength;
+                });
+            }
+            
+            plantCell(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / this.cellSize);
+                const y = Math.floor((e.clientY - rect.top) / this.cellSize);
+                
+                if (x >= 0 && x < this.cols && y >= 0 && y < this.rows) {
+                    this.grid[y][x] = this.maxDecay;
+                    this.render();
+                    this.updateStats();
+                }
+            }
+            
+            getNeighbors(row, col) {
+                const neighbors = [];
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        
+                        const newRow = row + i;
+                        const newCol = col + j;
+                        
+                        if (newRow >= 0 && newRow < this.rows && 
+                            newCol >= 0 && newCol < this.cols) {
+                            neighbors.push({
+                                row: newRow,
+                                col: newCol,
+                                value: this.grid[newRow][newCol]
+                            });
+                        }
+                    }
+                }
+                return neighbors;
+            }
+            
+            update() {
+                // Copy current grid to next grid
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        this.nextGrid[i][j] = this.grid[i][j];
+                    }
+                }
+                
+                let waveEventsThisGeneration = 0;
+                
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        const currentCell = this.grid[i][j];
+                        const neighbors = this.getNeighbors(i, j);
+                        
+                        if (currentCell > 0) {
+                            // Cell is alive and decaying
+                            this.nextGrid[i][j] = Math.max(0, currentCell - 1);
+                            
+                            // Check for wave propagation when cell is in decay phase
+                            if (currentCell <= this.maxDecay - 1 && currentCell > 0) {
+                                neighbors.forEach(neighbor => {
+                                    // If neighbor is dead or has low energy, activate it
+                                    if (this.grid[neighbor.row][neighbor.col] <= this.waveStrength) {
+                                        const newEnergy = Math.min(this.maxDecay, 
+                                            this.grid[neighbor.row][neighbor.col] + this.waveStrength);
+                                        this.nextGrid[neighbor.row][neighbor.col] = newEnergy;
+                                        if (this.grid[neighbor.row][neighbor.col] === 0) {
+                                            waveEventsThisGeneration++;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Swap grids
+                const temp = this.grid;
+                this.grid = this.nextGrid;
+                this.nextGrid = temp;
+                
+                this.generation++;
+                this.waveEvents += waveEventsThisGeneration;
+                
+                this.render();
+                this.updateStats();
+            }
+            
+            render() {
+                // Clear canvas with gradient background
+                const gradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, this.canvas.height);
+                gradient.addColorStop(0, '#0f0f23');
+                gradient.addColorStop(1, '#1a1a2e');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw cells
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        const cellValue = this.grid[i][j];
+                        if (cellValue > 0) {
+                            this.drawCell(j, i, cellValue);
+                        }
+                    }
+                }
+            }
+            
+            drawCell(x, y, energy) {
+                const intensity = energy / this.maxDecay;
+                const size = this.cellSize - 1;
+                
+                // Create glow effect
+                const centerX = x * this.cellSize + this.cellSize / 2;
+                const centerY = y * this.cellSize + this.cellSize / 2;
+                
+                // Outer glow
+                const glowGradient = this.ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, this.cellSize
+                );
+                
+                if (intensity > 0.8) {
+                    // Full energy - bright white/cyan
+                    glowGradient.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
+                    glowGradient.addColorStop(0.5, `rgba(100, 255, 218, ${intensity * 0.8})`);
+                    glowGradient.addColorStop(1, `rgba(100, 255, 218, ${intensity * 0.3})`);
+                } else if (intensity > 0.5) {
+                    // Medium energy - cyan/blue
+                    glowGradient.addColorStop(0, `rgba(100, 255, 218, ${intensity})`);
+                    glowGradient.addColorStop(0.5, `rgba(33, 150, 243, ${intensity * 0.8})`);
+                    glowGradient.addColorStop(1, `rgba(33, 150, 243, ${intensity * 0.3})`);
+                } else if (intensity > 0.2) {
+                    // Low energy - blue/purple
+                    glowGradient.addColorStop(0, `rgba(33, 150, 243, ${intensity})`);
+                    glowGradient.addColorStop(0.5, `rgba(156, 39, 176, ${intensity * 0.8})`);
+                    glowGradient.addColorStop(1, `rgba(156, 39, 176, ${intensity * 0.3})`);
+                } else {
+                    // Very low energy - purple/red
+                    glowGradient.addColorStop(0, `rgba(156, 39, 176, ${intensity})`);
+                    glowGradient.addColorStop(0.5, `rgba(244, 67, 54, ${intensity * 0.8})`);
+                    glowGradient.addColorStop(1, `rgba(244, 67, 54, ${intensity * 0.3})`);
+                }
+                
+                this.ctx.fillStyle = glowGradient;
+                this.ctx.fillRect(x * this.cellSize, y * this.cellSize, size, size);
+                
+                // Inner bright core
+                const coreSize = size * intensity * 0.6;
+                const coreOffset = (size - coreSize) / 2;
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${intensity * 0.8})`;
+                this.ctx.fillRect(
+                    x * this.cellSize + coreOffset,
+                    y * this.cellSize + coreOffset,
+                    coreSize,
+                    coreSize
+                );
+            }
+            
+            updateStats() {
+                let living = 0;
+                let decaying = 0;
+                
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        const cell = this.grid[i][j];
+                        if (cell === this.maxDecay) {
+                            living++;
+                        } else if (cell > 0) {
+                            decaying++;
+                        }
+                    }
+                }
+                
+                document.getElementById('livingCells').textContent = living;
+                document.getElementById('decayingCells').textContent = decaying;
+                document.getElementById('generations').textContent = this.generation;
+                document.getElementById('waveEvents').textContent = this.waveEvents;
+            }
+            
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.animate();
+                }
+            }
+            
+            pause() {
+                this.isRunning = false;
+                if (this.animationId) {
+                    clearTimeout(this.animationId);
+                }
+            }
+            
+            animate() {
+                if (this.isRunning) {
+                    this.update();
+                    this.animationId = setTimeout(() => this.animate(), this.speed);
+                }
+            }
+            
+            reset() {
+                this.pause();
+                this.initializeGrids();
+                this.generation = 0;
+                this.waveEvents = 0;
+                this.render();
+                this.updateStats();
+            }
+            
+            clear() {
+                this.initializeGrids();
+                this.render();
+                this.updateStats();
+            }
+            
+            randomSeed() {
+                this.clear();
+                // Create random clusters of living cells
+                const clusters = 5 + Math.floor(Math.random() * 10);
+                
+                for (let c = 0; c < clusters; c++) {
+                    const centerRow = Math.floor(Math.random() * this.rows);
+                    const centerCol = Math.floor(Math.random() * this.cols);
+                    const clusterSize = 3 + Math.floor(Math.random() * 8);
+                    
+                    for (let i = 0; i < clusterSize; i++) {
+                        const row = centerRow + Math.floor(Math.random() * 6) - 3;
+                        const col = centerCol + Math.floor(Math.random() * 6) - 3;
+                        
+                        if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
+                            this.grid[row][col] = this.maxDecay;
+                        }
+                    }
+                }
+                
+                this.render();
+                this.updateStats();
+            }
+        }
+        
+        // Initialize the cellular automaton when page loads
+        window.addEventListener('load', () => {
+            new DecayWaveCellularAutomaton();
+        });
+    </script>
+</body>
+</html> 
