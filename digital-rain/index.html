@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Rain - Enhanced & Working</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #canvas {
+            display: block;
+            background: #000;
+            cursor: crosshair;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 20, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #0f0;
+            backdrop-filter: blur(5px);
+            min-width: 280px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .controls h3 {
+            color: #0f0;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px #0f0;
+        }
+        
+        .control-section {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #0a0;
+        }
+        
+        .control-section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            color: #0f0;
+            font-size: 11px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        label {
+            color: #0a0;
+            font-size: 12px;
+            min-width: 80px;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+            accent-color: #0f0;
+        }
+        
+        .value {
+            color: #0f0;
+            font-size: 12px;
+            min-width: 35px;
+            text-align: right;
+        }
+        
+        button {
+            background: transparent;
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 8px 12px;
+            margin: 3px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 15px #0f0;
+        }
+        
+        button.active {
+            background: #0f0;
+            color: #000;
+        }
+        
+        .mode-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 20, 0, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #0a0;
+            font-size: 12px;
+        }
+        
+        .stat {
+            margin-bottom: 5px;
+        }
+        
+        .keyboard-help {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 20, 0, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #0a0;
+            font-size: 11px;
+            max-width: 200px;
+        }
+        
+        .keyboard-help h4 {
+            color: #0f0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .key-combo {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            color: #0a0;
+        }
+        
+        .hide-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: transparent;
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            text-transform: uppercase;
+        }
+        
+        .hide-toggle:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 15px #0f0;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                width: calc(100% - 40px);
+                max-height: 60vh;
+            }
+            
+            .keyboard-help {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="controls">
+        <h3>◦ DIGITAL RAIN ◦</h3>
+        
+        <div class="control-section">
+            <div class="section-title">Animation</div>
+            <div class="control-row">
+                <label>Speed:</label>
+                <input type="range" id="speed" min="1" max="10" value="3">
+                <span class="value" id="speedVal">3</span>
+            </div>
+            <div class="control-row">
+                <label>Density:</label>
+                <input type="range" id="density" min="1" max="30" value="12">
+                <span class="value" id="densityVal">12</span>
+            </div>
+            <div class="control-row">
+                <label>Trail Length:</label>
+                <input type="range" id="trail" min="5" max="40" value="15">
+                <span class="value" id="trailVal">15</span>
+            </div>
+            <div class="control-row">
+                <label>Brightness:</label>
+                <input type="range" id="brightness" min="0.2" max="1.5" step="0.1" value="1.0">
+                <span class="value" id="brightnessVal">1.0</span>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <div class="section-title">Character Mode</div>
+            <div class="mode-buttons">
+                <button id="binaryMode" class="active">Binary</button>
+                <button id="matrixMode">Matrix</button>
+                <button id="hexMode">Hex</button>
+                <button id="symbolMode">Symbols</button>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <div class="section-title">Visual Effects</div>
+            <div class="mode-buttons">
+                <button id="glowToggle">Glow</button>
+                <button id="pulseToggle">Pulse</button>
+                <button id="rainbowToggle">Rainbow</button>
+                <button id="scanlineToggle">Scanlines</button>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <div class="section-title">Controls</div>
+            <div style="text-align: center;">
+                <button id="pauseBtn">PAUSE</button>
+                <button id="resetBtn">RESET</button>
+                <button id="fullscreenBtn">FULLSCREEN</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stat">FPS: <span id="fps">0</span></div>
+        <div class="stat">Streams: <span id="streams">0</span></div>
+        <div class="stat">Characters: <span id="chars">0</span></div>
+        <div class="stat">Columns: <span id="columns">0</span></div>
+    </div>
+    
+    <div class="keyboard-help">
+        <h4>⌨ CONTROLS</h4>
+        <div class="key-combo"><span>SPACE</span><span>Pause</span></div>
+        <div class="key-combo"><span>R</span><span>Reset</span></div>
+        <div class="key-combo"><span>F</span><span>Fullscreen</span></div>
+        <div class="key-combo"><span>1-4</span><span>Modes</span></div>
+        <div class="key-combo"><span>G</span><span>Glow</span></div>
+        <div class="key-combo"><span>P</span><span>Pulse</span></div>
+        <div class="key-combo"><span>C</span><span>Rainbow</span></div>
+        <div class="key-combo"><span>S</span><span>Scanlines</span></div>
+        <div class="key-combo"><span>↑↓</span><span>Speed</span></div>
+        <div class="key-combo"><span>←→</span><span>Density</span></div>
+        <div class="key-combo"><span>Click</span><span>Add Stream</span></div>
+    </div>
+
+    <button id="hideToggle" class="hide-toggle">HIDE</button>
+
+    <script>
+        class EnhancedDigitalRain {
+            constructor() {
+                console.log('Initializing Enhanced Digital Rain...');
+                
+                // Get elements
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Configuration
+                this.speed = 3;
+                this.density = 12;
+                this.trailLength = 15;
+                this.brightness = 1.0;
+                this.fontSize = 18;
+                this.isRunning = true;
+                
+                // Character sets
+                this.charSets = {
+                    binary: ['0', '1'],
+                    matrix: ['ｱ', 'ｲ', 'ｳ', 'ｴ', 'ｵ', 'ｶ', 'ｷ', 'ｸ', 'ｹ', 'ｺ', 'ｻ', 'ｼ', 'ｽ', 'ｾ', 'ｿ', 'ﾀ', 'ﾁ', 'ﾂ', 'ﾃ', 'ﾄ', 'ﾅ', 'ﾆ', 'ﾇ', 'ﾈ', 'ﾉ', 'ﾊ', 'ﾋ', 'ﾌ', 'ﾍ', 'ﾎ', 'ﾏ', 'ﾐ', 'ﾑ', 'ﾒ', 'ﾓ', 'ﾔ', 'ﾕ', 'ﾖ', 'ﾗ', 'ﾘ', 'ﾙ', 'ﾚ', 'ﾛ', 'ﾜ', 'ｦ', 'ﾝ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+                    hex: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
+                    symbols: ['@', '#', '$', '%', '&', '*', '+', '-', '=', '?', '!', '<', '>', '/', '\\', '|', '^', '~']
+                };
+                
+                this.currentMode = 'binary';
+                this.currentChars = this.charSets.binary;
+                
+                // Effects
+                this.effects = {
+                    glow: false,
+                    pulse: false,
+                    rainbow: false,
+                    scanlines: false
+                };
+                
+                // Animation state
+                this.streams = [];
+                this.columns = 0;
+                this.frameCount = 0;
+                this.lastTime = performance.now();
+                this.fpsTime = performance.now();
+                this.time = 0;
+                
+                // Initialize
+                this.setupCanvas();
+                this.setupControls();
+                this.setupEventListeners();
+                this.setupHideToggle();
+                this.createInitialStreams();
+                
+                console.log('Starting enhanced animation...');
+                this.animate();
+            }
+            
+            setupCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.columns = Math.floor(this.canvas.width / this.fontSize);
+                
+                console.log('Canvas:', this.canvas.width, 'x', this.canvas.height, 'Columns:', this.columns);
+                document.getElementById('columns').textContent = this.columns;
+                
+                // Handle resize
+                window.addEventListener('resize', () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                    this.columns = Math.floor(this.canvas.width / this.fontSize);
+                    document.getElementById('columns').textContent = this.columns;
+                    this.createInitialStreams();
+                });
+            }
+            
+            setupControls() {
+                // Animation controls
+                document.getElementById('speed').addEventListener('input', (e) => {
+                    this.speed = parseInt(e.target.value);
+                    document.getElementById('speedVal').textContent = this.speed;
+                });
+                
+                document.getElementById('density').addEventListener('input', (e) => {
+                    this.density = parseInt(e.target.value);
+                    document.getElementById('densityVal').textContent = this.density;
+                });
+                
+                document.getElementById('trail').addEventListener('input', (e) => {
+                    this.trailLength = parseInt(e.target.value);
+                    document.getElementById('trailVal').textContent = this.trailLength;
+                });
+                
+                document.getElementById('brightness').addEventListener('input', (e) => {
+                    this.brightness = parseFloat(e.target.value);
+                    document.getElementById('brightnessVal').textContent = this.brightness;
+                });
+                
+                // Mode buttons
+                document.getElementById('binaryMode').addEventListener('click', () => this.setMode('binary'));
+                document.getElementById('matrixMode').addEventListener('click', () => this.setMode('matrix'));
+                document.getElementById('hexMode').addEventListener('click', () => this.setMode('hex'));
+                document.getElementById('symbolMode').addEventListener('click', () => this.setMode('symbols'));
+                
+                // Effect toggles
+                document.getElementById('glowToggle').addEventListener('click', () => this.toggleEffect('glow'));
+                document.getElementById('pulseToggle').addEventListener('click', () => this.toggleEffect('pulse'));
+                document.getElementById('rainbowToggle').addEventListener('click', () => this.toggleEffect('rainbow'));
+                document.getElementById('scanlineToggle').addEventListener('click', () => this.toggleEffect('scanlines'));
+                
+                // Control buttons
+                document.getElementById('pauseBtn').addEventListener('click', () => {
+                    this.isRunning = !this.isRunning;
+                    document.getElementById('pauseBtn').textContent = this.isRunning ? 'PAUSE' : 'RESUME';
+                    if (this.isRunning) this.animate();
+                });
+                
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.streams = [];
+                    this.createInitialStreams();
+                });
+                
+                document.getElementById('fullscreenBtn').addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            console.log('Fullscreen not supported:', err);
+                        });
+                    } else {
+                        document.exitFullscreen();
+                    }
+                });
+            }
+            
+            setupHideToggle() {
+                this.uiVisible = true;
+                
+                document.getElementById('hideToggle').addEventListener('click', () => {
+                    this.uiVisible = !this.uiVisible;
+                    const display = this.uiVisible ? 'block' : 'none';
+                    
+                    document.querySelector('.controls').style.display = display;
+                    document.querySelector('.stats').style.display = display;
+                    document.querySelector('.keyboard-help').style.display = display;
+                    
+                    document.getElementById('hideToggle').textContent = this.uiVisible ? 'HIDE' : 'SHOW';
+                });
+            }
+            
+            setupEventListeners() {
+                // Click to create streams
+                this.canvas.addEventListener('click', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const column = Math.floor(x / this.fontSize);
+                    this.createStreamAt(column);
+                });
+                
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    switch(e.code) {
+                        case 'Space':
+                            e.preventDefault();
+                            document.getElementById('pauseBtn').click();
+                            break;
+                        case 'KeyR':
+                            document.getElementById('resetBtn').click();
+                            break;
+                        case 'KeyF':
+                            document.getElementById('fullscreenBtn').click();
+                            break;
+                        case 'Digit1':
+                            this.setMode('binary');
+                            break;
+                        case 'Digit2':
+                            this.setMode('matrix');
+                            break;
+                        case 'Digit3':
+                            this.setMode('hex');
+                            break;
+                        case 'Digit4':
+                            this.setMode('symbols');
+                            break;
+                        case 'KeyG':
+                            this.toggleEffect('glow');
+                            break;
+                        case 'KeyP':
+                            this.toggleEffect('pulse');
+                            break;
+                        case 'KeyC':
+                            this.toggleEffect('rainbow');
+                            break;
+                        case 'KeyS':
+                            this.toggleEffect('scanlines');
+                            break;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            this.adjustSpeed(1);
+                            break;
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            this.adjustSpeed(-1);
+                            break;
+                        case 'ArrowLeft':
+                            e.preventDefault();
+                            this.adjustDensity(-2);
+                            break;
+                        case 'ArrowRight':
+                            e.preventDefault();
+                            this.adjustDensity(2);
+                            break;
+                    }
+                });
+            }
+            
+            setMode(mode) {
+                this.currentMode = mode;
+                this.currentChars = this.charSets[mode];
+                
+                // Update UI
+                document.querySelectorAll('.mode-buttons button').forEach(btn => {
+                    if (btn.id.includes('Mode')) {
+                        btn.classList.remove('active');
+                    }
+                });
+                document.getElementById(mode + 'Mode').classList.add('active');
+                
+                console.log('Mode changed to:', mode);
+            }
+            
+            toggleEffect(effect) {
+                this.effects[effect] = !this.effects[effect];
+                const button = document.getElementById(effect + 'Toggle');
+                button.classList.toggle('active', this.effects[effect]);
+                
+                console.log('Effect', effect, this.effects[effect] ? 'enabled' : 'disabled');
+            }
+            
+            adjustSpeed(delta) {
+                const slider = document.getElementById('speed');
+                const newValue = Math.max(1, Math.min(10, this.speed + delta));
+                slider.value = newValue;
+                this.speed = newValue;
+                document.getElementById('speedVal').textContent = newValue;
+            }
+            
+            adjustDensity(delta) {
+                const slider = document.getElementById('density');
+                const newValue = Math.max(1, Math.min(30, this.density + delta));
+                slider.value = newValue;
+                this.density = newValue;
+                document.getElementById('densityVal').textContent = newValue;
+            }
+            
+            createInitialStreams() {
+                this.streams = [];
+                
+                // Create some initial streams
+                for (let i = 0; i < this.columns; i++) {
+                    if (Math.random() < 0.25) { // 25% chance
+                        this.createStreamAt(i);
+                    }
+                }
+                
+                console.log('Created', this.streams.length, 'initial streams');
+            }
+            
+            createStreamAt(column) {
+                if (column < 0 || column >= this.columns) return;
+                
+                // Remove existing stream at this column
+                this.streams = this.streams.filter(s => s.column !== column);
+                
+                // Create new stream
+                const stream = {
+                    column: column,
+                    y: -Math.random() * 300,
+                    speed: this.speed + Math.random() * 3,
+                    chars: [],
+                    brightness: 0.6 + Math.random() * 0.4,
+                    hue: Math.random() * 360,
+                    lastCharTime: performance.now() - Math.random() * 500
+                };
+                
+                // Add initial characters
+                for (let i = 0; i < this.trailLength; i++) {
+                    stream.chars.push({
+                        char: this.currentChars[Math.floor(Math.random() * this.currentChars.length)],
+                        age: i,
+                        brightness: Math.max(0.1, 1 - (i / this.trailLength))
+                    });
+                }
+                
+                this.streams.push(stream);
+            }
+            
+            getColor(brightness, stream, isHead = false) {
+                const alpha = brightness * this.brightness;
+                
+                if (this.effects.rainbow) {
+                    const hue = (stream.hue + this.time * 0.1) % 360;
+                    return `hsla(${hue}, 100%, ${50 + brightness * 30}%, ${alpha})`;
+                }
+                
+                const green = Math.floor(255 * brightness * this.brightness);
+                return `rgba(0, ${green}, 0, ${alpha})`;
+            }
+            
+            update() {
+                this.time += 1;
+                let totalChars = 0;
+                
+                // Update existing streams
+                this.streams.forEach(stream => {
+                    // Move stream down
+                    stream.y += stream.speed;
+                    
+                    // Update characters
+                    stream.chars.forEach((char, index) => {
+                        char.age++;
+                        
+                        // Calculate brightness with effects
+                        let brightness = Math.max(0.1, 1 - (index / this.trailLength)) * stream.brightness;
+                        
+                        if (this.effects.pulse) {
+                            brightness *= 0.7 + 0.3 * Math.sin(this.time * 0.05 + index * 0.5);
+                        }
+                        
+                        char.brightness = brightness;
+                        
+                        // Randomly change character
+                        if (Math.random() < 0.03) {
+                            char.char = this.currentChars[Math.floor(Math.random() * this.currentChars.length)];
+                        }
+                        
+                        totalChars++;
+                    });
+                    
+                    // Add new character at head
+                    const now = performance.now();
+                    if (now - stream.lastCharTime > 80 + Math.random() * 120) {
+                        stream.chars.unshift({
+                            char: this.currentChars[Math.floor(Math.random() * this.currentChars.length)],
+                            age: 0,
+                            brightness: stream.brightness
+                        });
+                        stream.lastCharTime = now;
+                    }
+                    
+                    // Remove old characters
+                    if (stream.chars.length > this.trailLength) {
+                        stream.chars.pop();
+                    }
+                });
+                
+                // Remove streams that are completely off screen
+                this.streams = this.streams.filter(stream => {
+                    return stream.y < this.canvas.height + this.trailLength * this.fontSize;
+                });
+                
+                // Randomly create new streams
+                if (Math.random() < this.density / 1000) {
+                    const column = Math.floor(Math.random() * this.columns);
+                    if (!this.streams.find(s => s.column === column)) {
+                        this.createStreamAt(column);
+                    }
+                }
+                
+                // Update stats
+                document.getElementById('streams').textContent = this.streams.length;
+                document.getElementById('chars').textContent = totalChars;
+            }
+            
+            render() {
+                // Clear with fade effect
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Add scanlines effect
+                if (this.effects.scanlines) {
+                    this.ctx.fillStyle = 'rgba(0, 255, 0, 0.02)';
+                    for (let y = 0; y < this.canvas.height; y += 4) {
+                        this.ctx.fillRect(0, y, this.canvas.width, 1);
+                    }
+                }
+                
+                // Set font
+                this.ctx.font = `${this.fontSize}px 'Courier New', monospace`;
+                this.ctx.textAlign = 'center';
+                
+                // Draw streams
+                this.streams.forEach(stream => {
+                    const x = stream.column * this.fontSize + this.fontSize / 2;
+                    
+                    stream.chars.forEach((char, index) => {
+                        const y = stream.y + index * this.fontSize;
+                        
+                        if (y > -this.fontSize && y < this.canvas.height + this.fontSize) {
+                            const color = this.getColor(char.brightness, stream, index === 0);
+                            this.ctx.fillStyle = color;
+                            
+                            // Glow effect
+                            if (this.effects.glow && index === 0) {
+                                this.ctx.shadowColor = this.effects.rainbow ? 
+                                    `hsl(${(stream.hue + this.time * 0.1) % 360}, 100%, 50%)` : '#0f0';
+                                this.ctx.shadowBlur = 15;
+                            } else if (this.effects.glow && index < 3) {
+                                this.ctx.shadowColor = this.effects.rainbow ? 
+                                    `hsl(${(stream.hue + this.time * 0.1) % 360}, 100%, 50%)` : '#0f0';
+                                this.ctx.shadowBlur = 5;
+                            } else {
+                                this.ctx.shadowBlur = 0;
+                            }
+                            
+                            this.ctx.fillText(char.char, x, y);
+                        }
+                    });
+                });
+                
+                this.ctx.shadowBlur = 0;
+            }
+            
+            updateFPS() {
+                this.frameCount++;
+                const now = performance.now();
+                
+                if (now - this.fpsTime >= 1000) {
+                    const fps = Math.round(this.frameCount * 1000 / (now - this.fpsTime));
+                    document.getElementById('fps').textContent = fps;
+                    this.frameCount = 0;
+                    this.fpsTime = now;
+                }
+            }
+            
+            animate() {
+                if (!this.isRunning) return;
+                
+                this.updateFPS();
+                this.update();
+                this.render();
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', () => {
+            try {
+                new EnhancedDigitalRain();
+                console.log('Enhanced Digital Rain started successfully!');
+            } catch (error) {
+                console.error('Error starting Enhanced Digital Rain:', error);
+            }
+        });
+        
+        // Prevent context menu
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html> 

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Gas Simulation - Physics Engine</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Dynamic Gas Simulation</h1>
+            <p>Interactive pressure-based gas dynamics with realistic physics</p>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Left Panel - Gas Controls -->
+            <div class="left-panel">
+                <div class="panel-section">
+                    <h3>Gas Types</h3>
+                    <div class="gas-selector">
+                        <button class="gas-btn active" data-gas="air">
+                            <div class="gas-color air-color"></div>
+                            <span>Air</span>
+                        </button>
+                        <button class="gas-btn" data-gas="smoke">
+                            <div class="gas-color smoke-color"></div>
+                            <span>Smoke</span>
+                        </button>
+                        <button class="gas-btn" data-gas="steam">
+                            <div class="gas-color steam-color"></div>
+                            <span>Steam</span>
+                        </button>
+                        <button class="gas-btn" data-gas="carbon">
+                            <div class="gas-color carbon-color"></div>
+                            <span>CO₂</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Simulation Controls</h3>
+                    <div class="control-group">
+                        <label>Pressure Sensitivity</label>
+                        <div class="slider-container">
+                            <input type="range" id="pressureSensitivity" min="0.1" max="3.0" step="0.1" value="1.0">
+                            <span id="pressureValue">1.0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Expansion Speed</label>
+                        <div class="slider-container">
+                            <input type="range" id="expansionSpeed" min="0.1" max="3.0" step="0.1" value="1.5">
+                            <span id="expansionValue">1.5</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Gas Injection Rate</label>
+                        <div class="slider-container">
+                            <input type="range" id="gasAmount" min="5" max="100" step="5" value="30">
+                            <span id="gasAmountValue">30</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Gravity Strength</label>
+                        <div class="slider-container">
+                            <input type="range" id="gravity" min="0" max="0.5" step="0.01" value="0.08">
+                            <span id="gravityValue">0.08</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Environment Tools</h3>
+                    <div class="tool-grid">
+                        <button class="tool-btn" data-tool="wall">
+                            <div class="tool-icon wall-icon"></div>
+                            <span>Solid Wall</span>
+                        </button>
+                        <button class="tool-btn" data-tool="leakyWall">
+                            <div class="tool-icon leaky-icon"></div>
+                            <span>Leaky Wall</span>
+                        </button>
+                        <button class="tool-btn" data-tool="valve">
+                            <div class="tool-icon valve-icon"></div>
+                            <span>Valve</span>
+                        </button>
+                        <button class="tool-btn" data-tool="compressor">
+                            <div class="tool-icon compressor-icon"></div>
+                            <span>Compressor</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center - Simulation Canvas -->
+            <div class="center-panel">
+                <div class="simulation-header">
+                    <div class="instruction-text" id="instructionText">
+                        🎯 Click to inject gas • 🛠️ Select tools from left panel • ⚡ Click valves to toggle
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="simulationCanvas" width="900" height="650"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Panel - Statistics & Advanced Options -->
+            <div class="right-panel">
+                <div class="panel-section">
+                    <h3>Live Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Pressure</div>
+                            <div class="stat-value" id="totalPressure">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Max Pressure</div>
+                            <div class="stat-value" id="maxPressure">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Active Particles</div>
+                            <div class="stat-value" id="particleCount">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">FPS</div>
+                            <div class="stat-value" id="fpsCounter">60</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Visualization</h3>
+                    <div class="control-group">
+                        <label>Show Pressure Grid</label>
+                        <input type="checkbox" id="showPressureGrid" checked>
+                    </div>
+                    <div class="control-group">
+                        <label>Show Particle Trails</label>
+                        <input type="checkbox" id="showTrails">
+                    </div>
+                    <div class="control-group">
+                        <label>Show Velocity Vectors</label>
+                        <input type="checkbox" id="showVectors">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Physics Settings</h3>
+                    <div class="control-group">
+                        <label>Air Resistance</label>
+                        <div class="slider-container">
+                            <input type="range" id="airResistance" min="0.9" max="0.99" step="0.001" value="0.98">
+                            <span id="airResistanceValue">0.98</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Collision Damping</label>
+                        <div class="slider-container">
+                            <input type="range" id="damping" min="0.3" max="0.9" step="0.05" value="0.7">
+                            <span id="dampingValue">0.7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button id="pauseBtn" class="action-btn">⏸️ Pause</button>
+                        <button id="clearBtn" class="action-btn danger">🗑️ Clear All</button>
+                        <button id="presetBtn" class="action-btn">🏗️ Load Preset</button>
+                        <button id="resetBtn" class="action-btn">🔄 Reset Settings</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Gas Properties</h3>
+                    <div class="gas-info" id="gasInfo">
+                        <div class="gas-property">
+                            <span>Weight:</span> <span id="gasWeight">1.0</span>
+                        </div>
+                        <div class="gas-property">
+                            <span>Expansion:</span> <span id="gasExpansion">1.0</span>
+                        </div>
+                        <div class="gas-property">
+                            <span>Viscosity:</span> <span id="gasViscosity">0.8</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
